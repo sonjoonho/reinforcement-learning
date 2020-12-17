@@ -10,7 +10,7 @@ from random_environment import Environment
 
 
 def reward_1(next_state: np.array, distance_to_goal: float):
-    reward: float = - distance_to_goal
+    reward: float = -distance_to_goal
     if distance_to_goal < 0.03:
         reward = 1.0
     return reward
@@ -23,7 +23,22 @@ def main():
     seeds = [391]
     discounts = [0.99]
     batch_sizes = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
-    target_update_intervals = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
+    target_update_intervals = [
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
+        16384,
+    ]
     learning_rate = [0.00025]
     clips = [10]
     alphas = [0.2]
@@ -38,36 +53,36 @@ def main():
     weight_decays = [0.001]
 
     param_grid = {
-        'discount': discounts,
-        'batch_size': batch_sizes,
-        'target_update_interval': target_update_intervals,
-        'learning_rate': learning_rate,
-        'clip': clips,
-        'alpha': alphas,
-        'beta': betas,
-        'replay_epsilon': replay_epsilons,
-        'n_action': n_actions,
-        'episode_length': episode_lengths,
-        'episode_length_decay': episode_length_decays,
-        'seed': seeds,
-        'epsilon_decay': epsilon_decays,
-        'reward': rewards,
-        'epsilon_min': epsilon_mins,
-        'weight_decay': weight_decays,
+        "discount": discounts,
+        "batch_size": batch_sizes,
+        "target_update_interval": target_update_intervals,
+        "learning_rate": learning_rate,
+        "clip": clips,
+        "alpha": alphas,
+        "beta": betas,
+        "replay_epsilon": replay_epsilons,
+        "n_action": n_actions,
+        "episode_length": episode_lengths,
+        "episode_length_decay": episode_length_decays,
+        "seed": seeds,
+        "epsilon_decay": epsilon_decays,
+        "reward": rewards,
+        "epsilon_min": epsilon_mins,
+        "weight_decay": weight_decays,
     }
     grid = ParameterGrid(param_grid)
-    print(f'Running {len(grid)} parameters')
+    print(f"Running {len(grid)} parameters")
 
     # segments texel41 - 0:18, texel42 - 18:36, texel43 - 36:54, texel44 - 54:72
     texelmap = {
-        'texel39': (0, 49),
-        'texel43': (49, 98),
-        'texel41': (98, 147),
-        'texel44': (147, 196),
+        "texel39": (0, 49),
+        "texel43": (49, 98),
+        "texel41": (98, 147),
+        "texel44": (147, 196),
     }
-    hostname = socket.gethostname().split('.')[0]
+    hostname = socket.gethostname().split(".")[0]
     START, END = texelmap[hostname]
-    print(f'Running {hostname} range {START}:{END}')
+    print(f"Running {hostname} range {START}:{END}")
     for i, params in enumerate(list(grid)[START:END], START):
         run(str(i), params)
 
@@ -75,23 +90,23 @@ def main():
 def run(index: str, params):
     agent = Agent(
         logging=False,
-        discount=params['discount'],
-        batch_size=params['batch_size'],
-        target_update_interval=params['target_update_interval'],
-        learning_rate=params['learning_rate'],
-        clip=params['clip'],
-        replay_alpha=params['alpha'],
-        replay_beta=params['beta'],
-        replay_epsilon=params['replay_epsilon'],
-        n_actions=params['n_action'],
-        episode_length=params['episode_length'],
-        episode_length_decay=params['episode_length_decay'],
-        epsilon_decay=params['epsilon_decay'],
-        epsilon_min=params['epsilon_min'],
-        reward_function=params['reward'],
-        weight_decay=params['weight_decay'],
+        discount=params["discount"],
+        batch_size=params["batch_size"],
+        target_update_interval=params["target_update_interval"],
+        learning_rate=params["learning_rate"],
+        clip=params["clip"],
+        replay_alpha=params["alpha"],
+        replay_beta=params["beta"],
+        replay_epsilon=params["replay_epsilon"],
+        n_actions=params["n_action"],
+        episode_length=params["episode_length"],
+        episode_length_decay=params["episode_length_decay"],
+        epsilon_decay=params["epsilon_decay"],
+        epsilon_min=params["epsilon_min"],
+        reward_function=params["reward"],
+        weight_decay=params["weight_decay"],
     )
-    random_seed = params['seed']
+    random_seed = params["seed"]
     np.random.seed(random_seed)
     # Create a random environment
     environment = Environment(magnification=500)
@@ -121,7 +136,7 @@ def run(index: str, params):
     # plot_loss(agent, index)
     # plot_reward(agent, index)
     # visualise(agent, index)
-    print(f'Agent reached the goal {agent.reached_goal_times} times.')
+    print(f"Agent reached the goal {agent.reached_goal_times} times.")
 
     # Test the agent for 100 steps, using its greedy policy
     state = environment.init_state
@@ -143,14 +158,16 @@ def run(index: str, params):
 
     # Print out the result
     if has_reached_goal:
-        result_str = f'{index} - Reached goal in ' + str(step_num) + ' steps.'
+        result_str = f"{index} - Reached goal in " + str(step_num) + " steps."
     else:
-        result_str = f'{index} - Did not reach goal. Final distance = ' + str(distance_to_goal)
+        result_str = f"{index} - Did not reach goal. Final distance = " + str(
+            distance_to_goal
+        )
 
     print(result_str)
 
-    with open(f'runs/run_{index}.txt', 'w') as f:
-        f.write(f'{result_str} {str(params)}')
+    with open(f"runs/run_{index}.txt", "w") as f:
+        f.write(f"{result_str} {str(params)}")
 
 
 if __name__ == "__main__":

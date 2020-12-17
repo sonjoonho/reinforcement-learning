@@ -57,7 +57,7 @@ EVALUATE_INTERVAL = 1
 
 
 def default_reward(next_state: np.array, distance_to_goal: float):
-    reward: float = - distance_to_goal
+    reward: float = -distance_to_goal
     if distance_to_goal < 0.03:
         reward = 1.0
     return reward
@@ -67,6 +67,7 @@ class Batch(NamedTuple):
     """
     Batch is a data class representing a minibatch of transitions.
     """
+
     # states is a 2D array of states.
     states: np.ndarray
     # actions is a 1D array of discrete actions.
@@ -82,13 +83,14 @@ class ReplayBuffer:
     Prioritised replay buffer as outlined in https://arxiv.org/pdf/1511.05952.pdf.
     """
 
-    def __init__(self,
-                 capacity: int = BUFFER_CAPACITY,
-                 epsilon: float = REPLAY_EPSILON,
-                 alpha: float = REPLAY_ALPHA,
-                 beta: float = REPLAY_BETA,
-                 beta_growth: float = REPLAY_BETA_GROWTH,
-                 ):
+    def __init__(
+        self,
+        capacity: int = BUFFER_CAPACITY,
+        epsilon: float = REPLAY_EPSILON,
+        alpha: float = REPLAY_ALPHA,
+        beta: float = REPLAY_BETA,
+        beta_growth: float = REPLAY_BETA_GROWTH,
+    ):
         self._size: int = 0
         self._capacity: int = capacity
         self._cursor: int = 0
@@ -110,9 +112,11 @@ class ReplayBuffer:
         self._max_priority: float = 0.1
         self._rng = np.RandomState = np.random.RandomState(int(time.time()))
 
-    def put(self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray):
-        # assert state.shape == (2,)
-        # assert next_state.shape == (2,)
+    def put(
+        self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray
+    ):
+        assert state.shape == (2,)
+        assert next_state.shape == (2,)
 
         c = self._cursor
 
@@ -130,14 +134,16 @@ class ReplayBuffer:
         Returns a sample from the replay buffer of size batch_size. Transitions are sampled according to their
         priorities, and are adjusted for bias using Importance Sampling.
         """
-        # assert self.size >= batch_size
+        assert self.size >= batch_size
 
         # length is how much of the numpy array we've used so far.
         length = min(self._capacity, self._size)
 
         priorities = self._priorities[:length]
         p = priorities / priorities.sum()
-        sample_idx: np.ndarray = self._rng.choice(length, batch_size, p=p, replace=False)
+        sample_idx: np.ndarray = self._rng.choice(
+            length, batch_size, p=p, replace=False
+        )
 
         # Note that np.empty() returns uninitialised memory so we must ensure that each entry is properly initialised.
         states = self._states[sample_idx]
@@ -156,8 +162,8 @@ class ReplayBuffer:
         if self._size % 100 == 0:
             self._beta = min(self._beta + self._beta_growth, 1.0)
 
-        # assert sample_idx.shape == (batch_size,)
-        # assert weights.shape == sample_idx.shape
+        assert sample_idx.shape == (batch_size,)
+        assert weights.shape == sample_idx.shape
 
         return batch, sample_idx, weights
 
@@ -165,7 +171,7 @@ class ReplayBuffer:
         """
         Update the priorities of the specified transitions.
         """
-        # assert batch_idx.shape == errors.shape
+        assert batch_idx.shape == errors.shape
         self._priorities[batch_idx] = (np.abs(errors) + self._epsilon) ** self._alpha
         self._max_priority = max(self._max_priority, self._priorities.max())
 
@@ -180,25 +186,26 @@ class Agent:
         np.array([0, -0.02]),  # South
     ]
 
-    def __init__(self,
-                 epsilon: float = INITIAL_EPSILON,
-                 epsilon_min: float = MIN_EPSILON,
-                 epsilon_decay: float = EPSILON_DECAY,
-                 epsilon_growth: float = EPSILON_GROWTH,
-                 episode_length: int = INITIAL_EPISODE_LENGTH,
-                 episode_length_decay: float = EPISODE_LENGTH_DECAY,
-                 batch_size: int = BATCH_SIZE,
-                 discount: float = DISCOUNT,
-                 learning_rate: float = LEARNING_RATE,
-                 target_update_interval: int = TARGET_NETWORK_UPDATE_INTERVAL,
-                 clip: float = CLIP,
-                 n_actions: int = N_ACTIONS,
-                 replay_alpha: float = REPLAY_ALPHA,
-                 replay_beta: float = REPLAY_BETA,
-                 replay_epsilon: float = REPLAY_EPSILON,
-                 reward_function: Callable[[np.ndarray, float], float] = default_reward,
-                 weight_decay: float = WEIGHT_DECAY,
-                 ):
+    def __init__(
+        self,
+        epsilon: float = INITIAL_EPSILON,
+        epsilon_min: float = MIN_EPSILON,
+        epsilon_decay: float = EPSILON_DECAY,
+        epsilon_growth: float = EPSILON_GROWTH,
+        episode_length: int = INITIAL_EPISODE_LENGTH,
+        episode_length_decay: float = EPISODE_LENGTH_DECAY,
+        batch_size: int = BATCH_SIZE,
+        discount: float = DISCOUNT,
+        learning_rate: float = LEARNING_RATE,
+        target_update_interval: int = TARGET_NETWORK_UPDATE_INTERVAL,
+        clip: float = CLIP,
+        n_actions: int = N_ACTIONS,
+        replay_alpha: float = REPLAY_ALPHA,
+        replay_beta: float = REPLAY_BETA,
+        replay_epsilon: float = REPLAY_EPSILON,
+        reward_function: Callable[[np.ndarray, float], float] = default_reward,
+        weight_decay: float = WEIGHT_DECAY,
+    ):
         # We use our own RNG which isn't effected by the global seed.
         self.rng = np.random.RandomState(int(time.time()))
 
@@ -241,9 +248,7 @@ class Agent:
             weight_decay=weight_decay,
         )
         self.buffer: ReplayBuffer = ReplayBuffer(
-            alpha=replay_alpha,
-            beta=replay_beta,
-            epsilon=replay_epsilon
+            alpha=replay_alpha, beta=replay_beta, epsilon=replay_epsilon
         )
 
         # Tracks when we are in 'evaluation mode'.
@@ -273,7 +278,11 @@ class Agent:
             self.finished_episode_tasks()
 
         # We evaluate our greedy policy every EVALUATE_INTERVAL episodes.
-        evaluation_episode = done and self.episodes_finished >= 80 and self.episodes_finished % EVALUATE_INTERVAL == 0
+        evaluation_episode = (
+            done
+            and self.episodes_finished >= 80
+            and self.episodes_finished % EVALUATE_INTERVAL == 0
+        )
         if evaluation_episode:
             self.num_steps_taken += 1
             self.evaluating = True
@@ -284,7 +293,7 @@ class Agent:
         """
         Returns the next *continuous* action.
         """
-        # assert state.shape == (2,)
+        assert state.shape == (2,)
 
         # If we are in evaluation mode, we simply return the next greedy action. Otherwise, we choose the next action
         # epsilon-greedily based on the output of the Q-network.
@@ -309,7 +318,9 @@ class Agent:
 
         return self._discrete_to_continuous_action(action)
 
-    def set_next_state_and_distance(self, next_state: Tuple[float, float], distance_to_goal: float):
+    def set_next_state_and_distance(
+        self, next_state: Tuple[float, float], distance_to_goal: float
+    ):
         """
         Performs a single training update.
         """
@@ -318,7 +329,7 @@ class Agent:
 
         # Note that the most recent state and action are set in get_next_action.
         next_state = np.asarray(next_state)
-        # assert next_state.shape == (2,)
+        assert next_state.shape == (2,)
 
         reward = self.reward_function(next_state, distance_to_goal)
 
@@ -357,7 +368,7 @@ class Agent:
         """
         Returns the next greedy *continuous* action.
         """
-        # assert state.shape == (2,)
+        assert state.shape == (2,)
 
         pred: np.ndarray = self.dqn.predict(state)
         optimal_action: int = np.argmax(pred).item()
@@ -372,7 +383,9 @@ class Agent:
         self.episodes_finished += 1
 
         # Decay epsilon and episode length per episode, only once we have reached the goal.
-        self.episode_epsilon = max(self.episode_epsilon * self.epsilon_decay, self.epsilon_min)
+        self.episode_epsilon = max(
+            self.episode_epsilon * self.epsilon_decay, self.epsilon_min
+        )
 
         # Reset per-episode variables.
         self.current_epsilon = self.episode_epsilon
@@ -385,7 +398,9 @@ class Network(torch.nn.Module):
         self.layer_1 = torch.nn.Linear(in_features=input_dimension, out_features=256)
         self.layer_2 = torch.nn.Linear(in_features=256, out_features=256)
         self.layer_3 = torch.nn.Linear(in_features=256, out_features=256)
-        self.output_layer = torch.nn.Linear(in_features=256, out_features=output_dimension)
+        self.output_layer = torch.nn.Linear(
+            in_features=256, out_features=output_dimension
+        )
 
     def forward(self, X: torch.Tensor):
         layer_1_output = torch.nn.functional.relu(self.layer_1(X))
@@ -397,21 +412,25 @@ class Network(torch.nn.Module):
 
 class DQN:
     def __init__(
-            self,
-            batch_size: int = BATCH_SIZE,
-            discount: float = DISCOUNT,
-            learning_rate: float = LEARNING_RATE,
-            clip: float = CLIP,
-            n_actions: int = N_ACTIONS,
-            weight_decay: float = WEIGHT_DECAY,
+        self,
+        batch_size: int = BATCH_SIZE,
+        discount: float = DISCOUNT,
+        learning_rate: float = LEARNING_RATE,
+        clip: float = CLIP,
+        n_actions: int = N_ACTIONS,
+        weight_decay: float = WEIGHT_DECAY,
     ):
         self._clip = clip
         self._n_actions = n_actions
         self._batch_size: int = batch_size
         self._discount: float = discount
         self._learning_rate: float = learning_rate
-        self._q_network: Network = Network(input_dimension=2, output_dimension=self._n_actions)
-        self._target_network: Network = Network(input_dimension=2, output_dimension=n_actions)
+        self._q_network: Network = Network(
+            input_dimension=2, output_dimension=self._n_actions
+        )
+        self._target_network: Network = Network(
+            input_dimension=2, output_dimension=n_actions
+        )
         self._target_network.eval()
 
         # Synchronise policy network and target network.
@@ -422,12 +441,14 @@ class DQN:
             weight_decay=weight_decay,
         )
 
-    def train_q_network(self, batch: Batch, weights: np.ndarray) -> Tuple[float, np.ndarray]:
+    def train_q_network(
+        self, batch: Batch, weights: np.ndarray
+    ) -> Tuple[float, np.ndarray]:
         td_error = self._calculate_error(batch)
 
         # Apply importance sampling by weighting the TD error.
         weights = torch.from_numpy(weights).unsqueeze(-1)
-        # assert weights.shape == td_error.shape
+        assert weights.shape == td_error.shape
 
         loss = self._calculate_loss(weights, td_error)
         self._optimiser.zero_grad()
@@ -440,11 +461,13 @@ class DQN:
 
         return loss.item(), td_error.detach().numpy().reshape(-1)
 
-    def _calculate_loss(self, weights: torch.Tensor, error: torch.Tensor) -> torch.Tensor:
+    def _calculate_loss(
+        self, weights: torch.Tensor, error: torch.Tensor
+    ) -> torch.Tensor:
         # Compute MSE from error.
         loss = (weights * error).square().mean()
         # An empty shape denotes a scalar value.
-        # assert loss.shape == ()
+        assert loss.shape == ()
         return loss
 
     def _calculate_error(self, batch: Batch) -> torch.Tensor:
@@ -458,25 +481,29 @@ class DQN:
         next_states = torch.from_numpy(batch.next_states)
 
         q_pred_state = self._q_network(states)
-        # assert q_pred_state.shape == (self.batch_size, self.n_actions)
+        assert q_pred_state.shape == (self.batch_size, self.n_actions)
 
         q_pred_state_actions = q_pred_state.gather(dim=1, index=actions)
-        # assert q_pred_state_actions.shape == (self.batch_size, 1)
+        assert q_pred_state_actions.shape == (self.batch_size, 1)
 
         target_pred_next_state = self._target_network(next_states)
-        # assert target_pred_next_state.shape == (self.batch_size, self.n_actions)
+        assert target_pred_next_state.shape == (self.batch_size, self.n_actions)
 
-        max_actions_target_pred_next_state = torch.argmax(target_pred_next_state, dim=1).unsqueeze(-1)
-        # assert max_actions_target_pred_next_state.shape == (self.batch_size, 1)
+        max_actions_target_pred_next_state = torch.argmax(
+            target_pred_next_state, dim=1
+        ).unsqueeze(-1)
+        assert max_actions_target_pred_next_state.shape == (self.batch_size, 1)
 
         q_pred_next_state = self._q_network(next_states)
-        # assert q_pred_next_state.shape == (self.batch_size, self.n_actions)
+        assert q_pred_next_state.shape == (self.batch_size, self.n_actions)
 
-        q_pred_next_state_actions = q_pred_next_state.gather(dim=1, index=max_actions_target_pred_next_state)
-        # assert q_pred_next_state_actions.shape == (self.batch_size, 1)
+        q_pred_next_state_actions = q_pred_next_state.gather(
+            dim=1, index=max_actions_target_pred_next_state
+        )
+        assert q_pred_next_state_actions.shape == (self.batch_size, 1)
 
         returns: torch.Tensor = rewards + self._discount * q_pred_next_state_actions
-        # assert returns.shape == q_pred_state_actions.shape
+        assert returns.shape == q_pred_state_actions.shape
 
         # We do not reduce the result yet so we can apply prioritised experience replay with importance sampling.
         td_error = q_pred_state_actions - returns.detach()
@@ -492,8 +519,8 @@ class DQN:
         """
         Returns Q-values predicted by the network for a single state.
         """
-        # assert state.shape == (2,)
+        assert state.shape == (2,)
         state_tensor = torch.from_numpy(state.astype(np.float32)).unsqueeze(0)
         pred = self._q_network(state_tensor).squeeze(0).detach().numpy()
-        # assert pred.shape == (self.n_actions,)
+        assert pred.shape == (self.n_actions,)
         return pred

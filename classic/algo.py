@@ -3,16 +3,21 @@ from typing import Tuple, Callable
 import numpy as np
 
 from grid import GridWorld, State
-from util import greedy_policy, generate_epsilon_soft_policy, \
-    set_epsilon_greedy_row, compute_return
+from util import (
+    greedy_policy,
+    generate_epsilon_soft_policy,
+    set_epsilon_greedy_row,
+    compute_return,
+)
 
 
-def q_learning(world: GridWorld,
-               discount: float,
-               n_episodes: int,
-               epsilon: float,
-               learning_rate: float,
-               ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def q_learning(
+    world: GridWorld,
+    discount: float,
+    n_episodes: int,
+    epsilon: float,
+    learning_rate: float,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     n_states = len(world.valid_states)
     n_actions = 4
 
@@ -40,14 +45,15 @@ def q_learning(world: GridWorld,
             # way.
             set_epsilon_greedy_row(policy, Q, cur_state_idx, n_actions, epsilon)
 
-            new_state_idx, action = world.generate_episode_step(policy,
-                                                                cur_state_idx)
+            new_state_idx, action = world.generate_episode_step(policy, cur_state_idx)
             immediate_reward = world.valid_states[new_state_idx].reward
             rewards.append(immediate_reward)
 
             Q[cur_state_idx, action] += learning_rate * (
-                    immediate_reward + discount * np.max(Q[new_state_idx]) - Q[
-                cur_state_idx, action])
+                immediate_reward
+                + discount * np.max(Q[new_state_idx])
+                - Q[cur_state_idx, action]
+            )
             cur_state_idx = new_state_idx
 
         total_rewards[i] = compute_return(np.asarray(rewards), discount)
@@ -56,13 +62,14 @@ def q_learning(world: GridWorld,
     return greedy_policy(policy), Q, total_rewards, intermediate_policies
 
 
-def monte_carlo(world: GridWorld,
-                discount: float,
-                n_episodes: int,
-                epsilon: float,
-                learning_rate: float,
-                logging: bool = False,
-                ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def monte_carlo(
+    world: GridWorld,
+    discount: float,
+    n_episodes: int,
+    epsilon: float,
+    learning_rate: float,
+    logging: bool = False,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Implementation of the incremental, first-visit Monte-Carlo control
     algorithm.
     """
@@ -73,8 +80,7 @@ def monte_carlo(world: GridWorld,
     Q: np.ndarray = np.zeros((n_states, n_actions))
 
     # Our policy to be iteratively optimised.
-    policy: np.ndarray = generate_epsilon_soft_policy(n_states, n_actions,
-                                                      epsilon)
+    policy: np.ndarray = generate_epsilon_soft_policy(n_states, n_actions, epsilon)
 
     intermediate_policies = np.zeros((n_episodes, n_states, n_actions))
 
@@ -83,7 +89,7 @@ def monte_carlo(world: GridWorld,
 
     for i in range(n_episodes):
         if logging:
-            print(f'Running episode {i + 1}/{n_episodes}')
+            print(f"Running episode {i + 1}/{n_episodes}")
         episode = world.generate_episode(policy)
         episode_states = [idx for (idx, _) in episode]
 
@@ -107,7 +113,8 @@ def monte_carlo(world: GridWorld,
                 continue
 
             Q[state_idx, action_taken] += learning_rate * (
-                    cur_return - Q[state_idx, action_taken])
+                cur_return - Q[state_idx, action_taken]
+            )
 
             # Set the probability in-place for each action in an epsilon-greedy
             # way.
@@ -120,10 +127,7 @@ def monte_carlo(world: GridWorld,
     return greedy_policy(policy), Q, total_rewards, intermediate_policies
 
 
-def value_iteration(world: GridWorld,
-                    threshold: float,
-                    discount: float
-                    ) -> np.ndarray:
+def value_iteration(world: GridWorld, threshold: float, discount: float) -> np.ndarray:
     delta = threshold
 
     n_states, n_actions = len(world.valid_states), 4
@@ -145,8 +149,8 @@ def value_iteration(world: GridWorld,
             state_Q = np.zeros(n_actions)
             for next_state_idx in range(n_states):
                 state_Q += T[next_state_idx, state_idx, :] * (
-                        R[next_state_idx, state_idx, :] + discount * V[
-                    next_state_idx])
+                    R[next_state_idx, state_idx, :] + discount * V[next_state_idx]
+                )
             V[state_idx] = np.max(state_Q)
             delta = max(delta, np.abs(v - V[state_idx]))
 
@@ -161,8 +165,8 @@ def value_iteration(world: GridWorld,
         state_Q = np.zeros(n_actions)
         for next_state_idx in range(n_states):
             state_Q += T[next_state_idx, state_idx, :] * (
-                    R[next_state_idx, state_idx, :] + discount * V[
-                next_state_idx])
+                R[next_state_idx, state_idx, :] + discount * V[next_state_idx]
+            )
 
         # Create a new policy for this state.
         new_policy = np.zeros(n_actions)
@@ -173,8 +177,7 @@ def value_iteration(world: GridWorld,
     return policy
 
 
-def policy_iteration(world: GridWorld, threshold: float,
-                     discount: float) -> np.ndarray:
+def policy_iteration(world: GridWorld, threshold: float, discount: float) -> np.ndarray:
     n_states, n_actions = len(world.valid_states), 4
 
     T: np.ndarray = world.transition_matrix
@@ -199,8 +202,8 @@ def policy_iteration(world: GridWorld, threshold: float,
             state_Q = np.zeros(n_actions)
             for next_state_idx in range(n_states):
                 state_Q += T[next_state_idx, state_idx, :] * (
-                        R[next_state_idx, state_idx, :] + discount * V[
-                    next_state_idx])
+                    R[next_state_idx, state_idx, :] + discount * V[next_state_idx]
+                )
 
             # Create a new policy for this state.
             new_policy = np.zeros(n_actions)
@@ -215,8 +218,9 @@ def policy_iteration(world: GridWorld, threshold: float,
     return policy
 
 
-def policy_evaluation(world: GridWorld, policy: np.ndarray, threshold: float,
-                      discount: float) -> np.ndarray:
+def policy_evaluation(
+    world: GridWorld, policy: np.ndarray, threshold: float, discount: float
+) -> np.ndarray:
     delta: float = 2 * threshold
 
     n_states, n_actions = policy.shape
@@ -237,9 +241,9 @@ def policy_evaluation(world: GridWorld, policy: np.ndarray, threshold: float,
                 state_Q: float = 0
                 for next_state_idx in range(n_states):
                     state_Q += T[next_state_idx, state_idx, action_idx] * (
-                            R[
-                                next_state_idx, state_idx, action_idx] + discount *
-                            V[next_state_idx])
+                        R[next_state_idx, state_idx, action_idx]
+                        + discount * V[next_state_idx]
+                    )
                 state_V += policy[state_idx, action_idx] * state_Q
 
             V_new[state_idx] = state_V

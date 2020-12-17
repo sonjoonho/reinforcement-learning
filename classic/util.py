@@ -50,8 +50,13 @@ def evaluate_policy(world: GridWorld, policy: np.ndarray, n_episodes: int) -> fl
     return np.mean(returns).item()
 
 
-def set_epsilon_greedy_row(policy: np.ndarray, Q: np.ndarray, cur_state_idx: int, n_actions: int,
-                           epsilon: float) -> None:
+def set_epsilon_greedy_row(
+    policy: np.ndarray,
+    Q: np.ndarray,
+    cur_state_idx: int,
+    n_actions: int,
+    epsilon: float,
+) -> None:
     optimal_action: int = np.argmax(Q[cur_state_idx, :]).item()
     for action in range(n_actions):
         if action == optimal_action:
@@ -62,4 +67,6 @@ def set_epsilon_greedy_row(policy: np.ndarray, Q: np.ndarray, cur_state_idx: int
 
 
 def get_rewards(world: GridWorld, episode: List[Tuple[int, int]]) -> np.ndarray:
-    return np.asarray([world.valid_states[state_idx].reward for (state_idx, _) in episode[1:]])
+    return np.asarray(
+        [world.valid_states[state_idx].reward for (state_idx, _) in episode[1:]]
+    )

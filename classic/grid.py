@@ -64,7 +64,9 @@ class GridWorld:
 
         # action_probability is the probability of the desired action succeeding. If it fails, we move in one of the
         # other directions with equal probability.
-        self.action_effect_probabilities: List[float] = [action_probability] + [(1.0 - action_probability) / 3.0] * 3
+        self.action_effect_probabilities: List[float] = [action_probability] + [
+            (1.0 - action_probability) / 3.0
+        ] * 3
 
         self.transition_matrix, self.reward_matrix = self._compute_transition_matrix()
 
@@ -95,7 +97,9 @@ class GridWorld:
         is_out_of_bounds = x < 0 or y < 0 or x > width - 1 or y > height - 1
         return not (is_wall or is_out_of_bounds)
 
-    def _compute_next_location(self, loc: Tuple[int, int], direction: Direction) -> Tuple[int, int]:
+    def _compute_next_location(
+        self, loc: Tuple[int, int], direction: Direction
+    ) -> Tuple[int, int]:
         old_x, old_y = loc
         if direction == Direction.NORTH:
             new_loc = (old_x, old_y - 1)
@@ -128,10 +132,16 @@ class GridWorld:
                     outcome -= 1
 
                 prob = self.action_effect_probabilities[effect]
-                for prior_state_number, prior_location in enumerate(self.valid_locations):
-                    post_location = self._compute_next_location(prior_location, Direction(outcome))
+                for prior_state_number, prior_location in enumerate(
+                    self.valid_locations
+                ):
+                    post_location = self._compute_next_location(
+                        prior_location, Direction(outcome)
+                    )
                     post_state_number = self.valid_locations.index(post_location)
-                    transition_matrix[post_state_number, prior_state_number, action] += prob
+                    transition_matrix[
+                        post_state_number, prior_state_number, action
+                    ] += prob
 
         reward_matrix = DEFAULT_REWARD * np.ones((n_states, n_states, 4))
         for state_idx, state in enumerate(self.valid_states):
@@ -148,21 +158,31 @@ class GridWorld:
             cur_state_idx = random.randint(0, n_states - 1)
         return cur_state_idx
 
-    def generate_episode_step(self, policy: np.ndarray, cur_state_idx: int) -> Tuple[int, int]:
+    def generate_episode_step(
+        self, policy: np.ndarray, cur_state_idx: int
+    ) -> Tuple[int, int]:
         n_states = len(self.valid_states)
         n_actions = 4
 
         cur_loc = self.valid_locations[cur_state_idx]
 
-        desired_action: int = random.choices(range(n_actions), weights=policy[cur_state_idx])[0]
+        desired_action: int = random.choices(
+            range(n_actions), weights=policy[cur_state_idx]
+        )[0]
         # After choosing an action as dictated by the policy, we use the transition matrix to determine the actual
         # next state is.
-        transition_probabilities = self.transition_matrix[:, cur_state_idx, desired_action]
-        new_state_idx: int = random.choices(range(n_states), weights=transition_probabilities)[0]
+        transition_probabilities = self.transition_matrix[
+            :, cur_state_idx, desired_action
+        ]
+        new_state_idx: int = random.choices(
+            range(n_states), weights=transition_probabilities
+        )[0]
         new_loc = self.valid_locations[new_state_idx]
 
         # From the actual movement, we can infer the actual action taken.
-        actual_action: int = self._compute_actual_action(Direction(desired_action), cur_loc, new_loc).value
+        actual_action: int = self._compute_actual_action(
+            Direction(desired_action), cur_loc, new_loc
+        ).value
 
         return new_state_idx, actual_action
 
@@ -186,8 +206,9 @@ class GridWorld:
         return episode
 
     @staticmethod
-    def _compute_actual_action(desired_action: Direction, cur_loc: Tuple[int, int],
-                               new_loc: Tuple[int, int]) -> Direction:
+    def _compute_actual_action(
+        desired_action: Direction, cur_loc: Tuple[int, int], new_loc: Tuple[int, int]
+    ) -> Direction:
         """Computes the action taken from two locations. If there is no movement, it default to the desired action."""
         cur_x, cur_y = cur_loc
         new_x, new_y = new_loc
